@@ -1,0 +1,105 @@
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <stdio.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <unistd.h>
+
+// conectam clientul de server prin functiile definite in client
+int conectare(), printare();
+
+int main()
+{
+	//              SOCKET
+
+	int soc = socket(PF_INET, SOCK_STREAM, 0);
+	printf("variabila este: %d", soc, "\n");
+	if(soc == -1){
+		printf("EROARE\n");
+		return -1;
+	}
+
+	// 	BIND (SOC, STRUCT MY_ADDR, LUNGIME BYTES (ADDRESS))
+	// bind - leaga clientul de server
+	
+	struct sockaddr_in my_addr ;
+
+	my_addr.sin_family = PF_INET;
+	my_addr.sin_port = htons(22221); // PORT SRRVER   // host to network short
+					// HTONS -  converteste nr port intr un format de retea BIG
+	my_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
+					// HTONL - converteste adresa IP in formatul de retea BIG
+	memset(my_addr.sin_zero, '\0', sizeof my_addr.sin_zero);
+	int bin = bind(soc, (struct sockaddr *)&my_addr, sizeof my_addr);
+	if(bin == -1){
+		printf("\n EROARE\n");
+		return -1;
+	}
+
+
+	// 	LISTEN (SOC, NR CONECTARI IN SERVER)
+	
+	int lis = listen(soc, 20);
+	if(lis == -1){
+		printf("Ascultare eronata! \n");
+		return -1;
+	}
+	
+	// 	ACCEPT 
+	int acc = 1;
+	while(acc > 0){
+	struct sockaddr_storage their_addr;
+	socklen_t addr_size;
+	int acc = accept(soc, (struct sockaddr *)&their_addr, &addr_size);
+	if( acc == -1){
+		printf("Client refuzat! \n");
+		return -1;
+	}
+	printf("\n Client acceptat! \n");
+
+	
+	//	RECIEVE - PRIMESTE PAGINA HTML
+	char buf[1000] = {0};
+	int len = sizeof(buf);
+	long rec = 1;
+	
+	while(rec > 0){
+	rec = recv(acc, buf, len, 0);
+	if(rec == -1){
+		printf("EROARE RECEPTIE!\n");
+		return -1;
+	}
+	printf("\n Receptie reusita!\n");
+        
+        if(strcmp(buf, "01#") == 0){
+	printf("01#\n");
+	if(conectare() == -1){
+		printf("Eroare la conectarea clientului \n");
+		continue;
+	}
+	if(printare() == -1){
+		printf("EROARE!\n");
+		continue;
+	}
+	}
+	
+
+	// 	         SEND 
+	
+	char *mesaj = "Comanda neimplementata";
+	int len2, bytes_sent;
+	len2 = strlen(mesaj);
+	bytes_sent = send(acc, mesaj, len2, 0);
+	
+	if(bytes_sent == -1){
+		printf("EROARE! \n");
+		return -1;
+	}
+	}
+	
+	//      	CLOSE 
+	close(acc);
+	}
+
+}

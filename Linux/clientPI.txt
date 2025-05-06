@@ -1,0 +1,81 @@
+#include<stdio.h>
+#include<arpa/inet.h>
+#include<netinet/in.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<string.h>
+#define SERVER_PORT 80
+
+int soc;
+struct sockaddr_in6 serv_addr;
+
+int conectare(){
+
+
+	//	SOCKET ( DOMAIN, TYPE, PROTOCOL(TCP) )
+
+soc = socket(PF_INET6, SOCK_STREAM, 0);
+printf("variabila este: %d ", soc, "\n");
+if(soc==-1){
+       	printf("eroare\n");
+	return -1;
+}
+
+	//	CONNECT ( SOC, SERV_ADDR (PORT DESTINATIE, IP), ADDRLEN (LUNGIME BYTES))
+
+serv_addr.sin6_family = PF_INET6;
+inet_pton(PF_INET6, "2a00:1288:f037:1fa::2000", &serv_addr.sin6_addr);
+serv_addr.sin6_port = htons(SERVER_PORT);
+
+int con = connect(soc, (struct sockaddr*)&serv_addr,sizeof(serv_addr));
+printf("\na doua variabila este: %d", con, "\n");
+
+if(con == -1){
+	printf("eroare \n");
+	return -1;
+}
+printf("Conectare reusita! \n");
+return 0;
+}
+
+
+int printare()
+{
+
+	//     SEND ( SOC, MESAJ (SITE), LUNGIME MESAJ, FLAG)
+
+char *mesaj = "GET / HTTP/1.0\r\n\r\n";
+int len, bytes_sent;
+len = strlen(mesaj);
+bytes_sent = send(soc, mesaj, len, 0);
+
+if(bytes_sent == -1){
+	printf("Cerere nereusita! \n");
+	return -1;
+}
+
+	//     RECIEVE (SOC, BUFFER, LUNG BUFFER, FLAG)
+
+char buf[1000] = {0} ;
+int len2 = sizeof(buf);
+long rec = 1;
+
+while(rec > 0){
+rec = recv(soc, buf, len2, 0);
+if(rec == -1){
+	printf("Eroare receptie! \n");
+	return -1;
+}
+
+printf("Numarul de bytes returnati de recv este: %d ", rec, "\n");
+
+for( int i = 0; i< rec; i++){
+
+printf("%c",buf[i]);
+}
+}
+puts("\n");
+close(soc);
+return 0;
+}
